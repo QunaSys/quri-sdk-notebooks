@@ -31,6 +31,26 @@ def get_cost_function(hamiltonian: Operator, time_evo_factories: Sequence[TimeEv
         return estimator(hamiltonian, state).value.real
     return cost_fn
 
+def qaoa_exact_time_evo(hamiltonian: Operator, n_qubits: int, n_steps: int):
+    isinghamiltonian = QubitHamiltonianInput(n_qubits, hamiltonian)
+    mixinghamiltonian = QubitHamiltonianInput(n_qubits, get_mixing_hamiltonian(n_qubits))
+    time_evo_factories = []
+    for _ in range(n_steps):
+        time_evo_factories.append(ExactUnitaryTimeEvolutionCircuitFactory(isinghamiltonian))
+        time_evo_factories.append(ExactUnitaryTimeEvolutionCircuitFactory(mixinghamiltonian))
+    
+    estimator = create_qulacs_general_vector_estimator()
+    cost_fn = get_cost_function(hamiltonian,time_evo_factories, estimator)
+    rng = np.random.default_rng()
+    params = rng.random(n_steps*2)
+
+    optimizer = Adam()
+    state = optimizer.get_init_state(params)
+    while state.status == OptimizerStatus.SUCCESS:
+        state = optimizer.step(state, cost_fn)
+
+    return state
+
 def qaoa_trotter(hamiltonian: Operator, n_qubits: int, n_steps: int, n_trotter: int):
     isinghamiltonian = QubitHamiltonianInput(n_qubits, hamiltonian)
     mixinghamiltonian = QubitHamiltonianInput(n_qubits, get_mixing_hamiltonian(n_qubits))
