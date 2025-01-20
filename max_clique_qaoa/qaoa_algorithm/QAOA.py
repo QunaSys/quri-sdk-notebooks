@@ -25,7 +25,7 @@ def get_cost_function(hamiltonian: Operator, time_evo_factories: Sequence[TimeEv
     def cost_fn(params: Sequence[float]):
         qubit_count = time_evo_factories[0].encoded_problem.n_state_qubit
         circuit = QuantumCircuit(qubit_count)
-        for p, f in zip(params(), time_evo_factories):
+        for p, f in zip(params, time_evo_factories):
             circuit += f(p)
         state = GeneralCircuitQuantumState(qubit_count, circuit)
         return estimator(hamiltonian, state).value.real
