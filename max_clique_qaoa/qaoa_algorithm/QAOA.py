@@ -1,82 +1,52 @@
+from typing import Sequence
+
+from quri_parts.circuit import QuantumCircuit
+from quri_parts.core.state import GeneralCircuitQuantumState
 from quri_parts.core.operator import Operator, pauli_label
+from quri_parts.core.estimator import QuantumEstimator
+from quri_parts.qulacs.estimator import create_qulacs_general_vector_estimator
 from quri_parts.core.state import ComputationalBasisState
-from quri_parts.algo.optimizer import Adam
+from quri_parts.algo.optimizer import Adam, OptimizerStatus
+from quri_algo.problem.hamiltonian import QubitHamiltonianInput
+from quri_algo.circuit.time_evolution.interface import TimeEvolutionCircuitFactory
 from quri_algo.circuit.time_evolution import TrotterTimeEvolutionCircuitFactory
 from quri_algo.circuit.time_evolution.exact_unitary import ExactUnitaryTimeEvolutionCircuitFactory
 import networkx as nx
 import numpy as np
 
-def get_hamiltonian_from_QUBO(Q):
-    # Convert QUBO to Hamiltonian operator
+def get_mixing_hamiltonian(n_qubits):
     hamiltonian = Operator()
-    for i in range(n):
-        for j in range(i, n):
-            if abs(Q[i,j]) > 1e-10:
-                if i == j:
-                    # Diagonal terms
-                    hamiltonian.add_term(pauli_label(f"Z{i}"), Q[i,i])
-                else:
-                    # Off-diagonal terms
-                    hamiltonian.add_term(pauli_label(f"Z{i}Z{j}"),Q[i,j])
-
+    for i in range(n_qubits):
+        hamiltonian.add_term(pauli_label(f"X{i}"),1.0)
+    
     return hamiltonian
 
-def get_QUBO_from_graph(G):
-    # Convert max clique to QUBO
-    n = len(G.nodes())
-    Q = np.zeros((n,n))
-    for i in range(n):
-        for j in range(n):
-            if i != j:
-                if not G.has_edge(i,j):
-                    Q[i,j] += 1
-                Q[i,i] += -1
-                Q[j,j] += -1
+def get_cost_function(hamiltonian: Operator, time_evo_factories: Sequence[TimeEvolutionCircuitFactory], estimator: QuantumEstimator):
+    def cost_fn(params: Sequence[float]):
+        qubit_count = time_evo_factories[0].qubit_count
+        circuit = QuantumCircuit(qubit_count)
+        for p, f in zip(params(), time_evo_factories):
+            circuit += f(p)
+        state = GeneralCircuitQuantumState(qubit_count, circuit)
+        estimator(hamiltonian, state)
+    return cost_fn
 
-    return Q
+def qaoa_trotter(hamiltonian: Operator, n_qubits: int, n_steps: int, n_trotter: int):
+    isinghamiltonian = QubitHamiltonianInput(n_qubits, hamiltonian)
+    mixinghamiltonian = QubitHamiltonianInput(n_qubits, get_mixing_hamiltonian(n_qubits))
+    time_evo_factories = []
+    for _ in range(n_steps):
+        time_evo_factories.append(TrotterTimeEvolutionCircuitFactory(isinghamiltonian, n_trotter))
+        time_evo_factories.append(TrotterTimeEvolutionCircuitFactory(mixinghamiltonian, n_trotter))
+    
+    estimator = create_qulacs_general_vector_estimator()
+    cost_fn = get_cost_function(hamiltonian,time_evo_factories, estimator)
+    rng = np.random.default_rng()
+    params = rng.random(n_steps*2)
 
-def main():
-    G = nx.Graph()
-    G.add_edges_from([(0,1), (1,2), (2,3), (3,0), (0,2)])  # Sample graph
+    optimizer = Adam()
+    state = optimizer.get_init_state(params)
+    while state.status == OptimizerStatus.SUCCESS:
+        state = optimizer.step(state, cost_fn)
 
-    # # Run optimization (Note: This is a simplified version, actual optimization would need a quantum backend)
-    # steps = 100
-    # for step in range(steps):
-        # Run circuit with current parameters
-    #     parameterized_circuit = circuit.bind_parameters(optimizer.parameters)
-        
-    #     # Initialize state in equal superposition
-    #     init_state = ComputationalBasisState(n, bits=0)
-        
-    #     # Calculate expectation value
-    #     # Note: In practice this would be done on quantum hardware
-    #     # Here we're using a simplified calculation
-    #     expectation = 0.0
-        
-    #     # Calculate gradient
-    #     grad = np.zeros_like(optimizer.parameters)
-    #     # Calculate gradient using parameter shift rule
-    #     # For QAOA, the shift amount is pi/2 for gamma (even indices) and pi/4 for beta (odd indices)
-    #     for i in range(len(optimizer.parameters)):
-    #         shift = np.pi/2 if i % 2 == 0 else np.pi/4
-            
-    #         params_plus = optimizer.parameters.copy()
-    #         params_minus = optimizer.parameters.copy()
-    #         params_plus[i] += shift
-    #         params_minus[i] -= shift
-            
-    #         # Calculate expectation values at shifted parameters
-    #         # In practice these would be quantum measurements
-    #         exp_plus = 0.0  # expectation with positive shift
-    #         exp_minus = 0.0 # expectation with negative shift
-            
-    #         grad[i] = (exp_plus - exp_minus) / 2
-        
-    #     # Update parameters using optimizer
-    #     optimizer.update_parameters(-grad)
-        
-    #     if step % 10 == 0:
-    #         print(f"Step {step}, Energy: {expectation:.4f}")
-
-    # print("QAOA optimization completed")
-    # print("Final parameters:", optimizer.parameters)
+    return state
