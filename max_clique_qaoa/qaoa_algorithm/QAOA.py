@@ -6,7 +6,7 @@ from quri_parts.core.operator import Operator, pauli_label
 from quri_parts.core.estimator import QuantumEstimator
 from quri_parts.qulacs.estimator import create_qulacs_general_vector_estimator
 from quri_parts.core.state import ComputationalBasisState
-from quri_parts.algo.optimizer import Adam, OptimizerStatus
+from quri_parts.algo.optimizer import OptimizerStatus, NFT
 from quri_algo.problem.hamiltonian import QubitHamiltonianInput
 from quri_algo.circuit.time_evolution.interface import TimeEvolutionCircuitFactory
 from quri_algo.circuit.time_evolution import TrotterTimeEvolutionCircuitFactory
@@ -44,7 +44,7 @@ def qaoa_exact_time_evo(hamiltonian: Operator, n_qubits: int, n_steps: int):
     rng = np.random.default_rng()
     params = rng.random(n_steps*2)
 
-    optimizer = Adam()
+    optimizer = NFT()
     state = optimizer.get_init_state(params)
     while state.status == OptimizerStatus.SUCCESS:
         state = optimizer.step(state, cost_fn)
