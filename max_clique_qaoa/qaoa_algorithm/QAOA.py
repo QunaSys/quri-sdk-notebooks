@@ -28,7 +28,7 @@ def get_cost_function(hamiltonian: Operator, time_evo_factories: Sequence[TimeEv
         for p, f in zip(params(), time_evo_factories):
             circuit += f(p)
         state = GeneralCircuitQuantumState(qubit_count, circuit)
-        estimator(hamiltonian, state)
+        return estimator(hamiltonian, state).value.real
     return cost_fn
 
 def qaoa_trotter(hamiltonian: Operator, n_qubits: int, n_steps: int, n_trotter: int):
