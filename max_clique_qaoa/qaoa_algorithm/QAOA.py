@@ -23,7 +23,7 @@ def get_mixing_hamiltonian(n_qubits):
 
 def get_cost_function(hamiltonian: Operator, time_evo_factories: Sequence[TimeEvolutionCircuitFactory], estimator: QuantumEstimator):
     def cost_fn(params: Sequence[float]):
-        qubit_count = time_evo_factories[0].qubit_count
+        qubit_count = time_evo_factories[0].encoded_problem.n_state_qubit
         circuit = QuantumCircuit(qubit_count)
         for p, f in zip(params(), time_evo_factories):
             circuit += f(p)
