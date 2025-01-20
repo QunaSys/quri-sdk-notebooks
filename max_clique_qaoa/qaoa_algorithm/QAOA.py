@@ -64,7 +64,7 @@ def qaoa_trotter(hamiltonian: Operator, n_qubits: int, n_steps: int, n_trotter: 
     rng = np.random.default_rng()
     params = rng.random(n_steps*2)
 
-    optimizer = Adam()
+    optimizer = NFT()
     state = optimizer.get_init_state(params)
     while state.status == OptimizerStatus.SUCCESS:
         state = optimizer.step(state, cost_fn)
