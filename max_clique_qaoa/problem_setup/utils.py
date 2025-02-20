@@ -18,22 +18,6 @@ def get_hamiltonian_from_QUBO(Q):
                     # Off-diagonal terms
                     hamiltonian.add_term(pauli_label(f"Z{i} Z{j}"), Q[i, j] / 4)
 
-    # # Convert QUBO to Ising
-    # h = {}  # Linear terms
-    # J = {}  # Quadratic terms
-    # offset = 0
-    # # Calculate h, J and offset
-    # for (i, j), value in Q.items():
-    #     if i == j:  # Diagonal terms
-    #         h[i] = value / 2
-    #         offset += value / 4
-    #     else:  # Off-diagonal terms
-    #         J[(i, j)] = value / 4
-    #         h[i] = h.get(i, 0) + value / 4
-    #         h[j] = h.get(j, 0) + value / 4
-    #         offset += value / 4
-    # return h, J, offset
-
     return hamiltonian
 
 
