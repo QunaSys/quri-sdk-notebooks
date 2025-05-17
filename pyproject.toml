@@ -15,6 +15,7 @@ quri-parts = { version=">=0.22", extras=["braket", "cirq", "qiskit", "qulacs", "
 tabulate = "^0.9"
 pylatexenc = "^2.10"
 seaborn = "^0.13.2"
+qiskit-aer = "^0.17.0"
 
 [tool.poetry.group.dev.dependencies]
 notebook = "^7.2.2"
