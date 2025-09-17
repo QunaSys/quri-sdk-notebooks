@@ -1,3 +1,5 @@
+⚠️ ___THIS REPOSITORY IS ARCHIVED AND IS NO LONGER BEING MAINTAINED. CONTENTS HAVE BEEN MOVED TO https://github.com/QunaSys/quri-sdk/tree/main/notebooks___ ⚠️
+
 # quri-sdk-notebooks
 Example and tutorial notebooks used in QURI SDK documentation
 
